@@ -86,7 +86,7 @@
 
   function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   function normalizeDomain(v){return v.trim().toLowerCase().replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/.*$/,"").replace(/\.$/,"")}
-  function validDomain(v){return /^(?=.(3, 253)$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(tw|com\.tw)$/.test(v)}
+  function validDomain(v){return /^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(tw|com\.tw)$/.test(v)}
 
   async function renderPreview(){
     const { data, error } = await client.from("domain_submissions").select("*").order("created_at", { ascending:false });
