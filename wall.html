@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>大家的專屬網址｜即時卡片牆</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#eef2f5;--text:#101416;--muted:#5f676c;--line:rgba(16,20,22,.42);--card:rgba(255,255,255,.70)}
+*{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC",sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+body::before{content:"";position:fixed;width:980px;height:980px;left:32%;top:53%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(238,242,245,.95) 0 15%,rgba(72,223,231,.17) 16% 22%,rgba(238,242,245,.92) 23% 31%,rgba(72,223,231,.24) 32% 40%,rgba(238,242,245,.90) 41% 51%,rgba(72,223,231,.28) 52% 61%,rgba(72,223,231,.12) 62% 70%,transparent 71%);filter:blur(12px);z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:48px 48px 60px}
+header{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(420px,1.2fr);gap:60px;align-items:end;margin-bottom:42px}
+.title h1{margin:0;font-size:clamp(48px,5.6vw,86px);line-height:.95;font-weight:400;letter-spacing:-.05em}
+.title p{margin:18px 0 0;color:var(--muted);max-width:420px;line-height:1.7;font-size:14px}
+.summary{position:relative;border-top:1px solid var(--line);padding-top:22px;min-height:108px}
+.summary::before{content:"";position:absolute;left:-8px;top:-4px;width:7px;height:7px;border-radius:50%;background:#111}
+.summary strong{display:block;font-weight:400;font-size:30px;letter-spacing:.03em} .summary span{display:block;margin-top:8px;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 18px;align-items:start}
+.card{position:relative;min-height:148px;padding:20px 18px 18px;background:var(--card);border-top:1px solid rgba(16,20,22,.62);backdrop-filter:blur(7px);animation:fade .28s ease both}
+.card::before{content:"";position:absolute;left:-4px;top:-4px;width:7px;height:7px;border-radius:50%;background:#111}
+.company{font-size:23px;line-height:1.2;font-weight:400;letter-spacing:.01em;overflow-wrap:anywhere} .desc{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.55;min-height:40px} .domain{margin-top:14px;font-size:16px;font-weight:600;letter-spacing:.02em;overflow-wrap:anywhere}
+.empty{grid-column:1/-1;border-top:1px solid var(--line);padding:42px 0;color:var(--muted);font-size:18px}
+.status{margin-top:20px;color:var(--muted);font-size:12px}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:960px){header{grid-template-columns:1fr;gap:28px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}body::before{left:50%;width:800px;height:800px}}
+@media(max-width:620px){.wrap{padding:32px 22px 46px}.grid{grid-template-columns:1fr}.title h1{font-size:54px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header>
+<div class="title"><h1>Domain<br>wall.</h1><p>每一筆參與者送出的公司資訊與網址，都會即時出現在這裡。</p></div>
+<div class="summary"><strong>共 <span id="count" style="display:inline;margin:0;color:inherit;font-size:inherit">0</span> 筆提案</strong><span>LIVE SUBMISSIONS / REAL-TIME</span></div>
+</header>
+<section id="grid" class="grid" aria-live="polite"></section>
+<div id="status" class="status">Connecting…</div>
+</main>
+<script>
+(() => {
+  const PROJECT_URL="https://bhlibnjbaekpbnarbedg.supabase.co";
+  const PUBLISHABLE_KEY="sb_publishable_U72v9QE1pthEDhoHl080nQ_jpOGKdTi";
+  const client=window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY);
+  const grid=document.getElementById("grid"),count=document.getElementById("count"),status=document.getElementById("status");
+  function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+  async function render(){
+    const {data,error}=await client.from("domain_submissions").select("*").order("created_at",{ascending:false});
+    if(error){grid.innerHTML='<div class="empty">尚未連上資料庫，請先完成 Supabase SQL 設定。</div>';status.textContent=error.message;return}
+    count.textContent=data.length;
+    grid.innerHTML=data.length?data.map(x=>`<article class="card"><div class="company">${esc(x.company)}</div><div class="desc">${esc(x.description)}</div><div class="domain">${esc(x.domain)}</div></article>`).join(""):'<div class="empty">Waiting for the first submission…</div>';
+  }
+  client.channel("domain-wall-live").on("postgres_changes",{event:"*",schema:"public",table:"domain_submissions"},render).subscribe(state=>{status.textContent=state==="SUBSCRIBED"?"Realtime connected":state});
+  render();
+})();
+</script>
+</body>
+</html>
